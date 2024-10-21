@@ -1,14 +1,11 @@
-// pages/index.tsx
-
-import React from 'react';
+// /pages/index.tsx
 import Weather from '../components/Weather';
 
-const Home: React.FC = () => {
-  return (
-    <div>
-      <Weather />
-    </div>
-  );
-};
-
-export default Home;
+export default function Home() {
+    return (
+        <div>
+            <h1>Weather Application</h1>
+            <Weather />
+        </div>
+    );
+}
