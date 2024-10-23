@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FaSun, FaCloudRain, FaSnowflake, FaCloud } from 'react-icons/fa'; // Icons
+import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from 'recharts'; // Recharts
 
 interface WeatherSummary {
   date: string;
@@ -19,6 +20,7 @@ const WeatherApp: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [globalSummary, setGlobalSummary] = useState<WeatherSummary | null>(null);
   const [temperatureThreshold, setTemperatureThreshold] = useState<number>(20); // Default value of 20
+  const [temperatureData, setTemperatureData] = useState<{ date: string; temperature: number }[]>([]); // Temperature data for the graph
 
   // Helper function to get the right weather icon
   const getWeatherIcon = (condition: string | undefined) => {
@@ -53,6 +55,13 @@ const WeatherApp: React.FC = () => {
       setWeatherSummary(summaryData);
       setHumidity(weatherData.humidity); // Assuming this is city-specific humidity
       checkForThresholdAlerts(weatherData.summary.maxTemp ?? 0); // Check alerts
+
+      // Add temperature data for graph
+      setTemperatureData((prevData) => [
+        ...prevData,
+        { date: summaryData.date, temperature: summaryData.maxTemp ?? 0 },
+      ]);
+
       setError(null);
     } catch (error) {
       console.error(error);
@@ -122,68 +131,78 @@ const WeatherApp: React.FC = () => {
 
       {error && <p className="text-red-600">{error}</p>}
 
-      {/* Display today's temperature with icon */}
-      {weatherSummary && (
+      {/* Temperature Graph */}
+      {temperatureData.length > 0 && (
         <div className="bg-white bg-opacity-20 rounded-lg p-4 m-2 shadow-lg w-80 text-center mb-4">
-          <h3 className="text-xl">Today's Weather in {city}</h3>
-          <div className="flex justify-center items-center space-x-4">
-            {getWeatherIcon(weatherSummary.dominantWeatherCondition)}
-            <p className="text-2xl">{weatherSummary.maxTemp?.toFixed(1)}°C</p>
-          </div>
-          <p className="text-lg">Today's Temperature: {weatherSummary.maxTemp?.toFixed(1)}°C</p>
+          <h3 className="text-xl">Temperature Over Time</h3>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={temperatureData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip />
+              <Line type="monotone" dataKey="temperature" stroke="#ff7300" />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       )}
 
+      {/* Info Boxes Section */}
+      <div className="flex flex-wrap justify-center gap-4 mb-6">
+        {/* Today's Weather */}
+        {weatherSummary && (
+          <div className="bg-white bg-opacity-20 rounded-lg p-4 shadow-lg w-80 text-center">
+            <h3 className="text-xl">Today's Weather in {city}</h3>
+            <div className="flex justify-center items-center space-x-4">
+              {getWeatherIcon(weatherSummary.dominantWeatherCondition)}
+              <p className="text-2xl">{weatherSummary.maxTemp?.toFixed(1)}°C</p>
+            </div>
+            <p className="text-lg">Max Temp: {weatherSummary.maxTemp?.toFixed(1)}°C</p>
+          </div>
+        )}
+
+        {/* Global Weather Summary */}
+        {globalSummary && (
+          <div className="bg-white bg-opacity-20 rounded-lg p-4 shadow-lg w-80 text-center">
+            <h3 className="text-xl">Weather Summary</h3>
+            <p className="text-lg">Avg Temp: {globalSummary.averageTemp !== null ? globalSummary.averageTemp.toFixed(1) : 'N/A'}°C</p>
+            <p className="text-lg">Max Temp: {globalSummary.maxTemp !== null ? globalSummary.maxTemp.toFixed(1) : 'N/A'}°C</p>
+            <p className="text-lg">Min Temp: {globalSummary.minTemp !== null ? globalSummary.minTemp.toFixed(1) : 'N/A'}°C</p>
+            <p className="text-lg">Avg Humidity: {globalSummary.averageHumidity !== null ? globalSummary.averageHumidity.toFixed(1) : 'N/A'}%</p>
+            <p className="text-lg">Dominant Condition: {globalSummary.dominantWeatherCondition}</p>
+          </div>
+        )}
+
+        {/* Humidity for the selected city */}
+        {humidity !== null && (
+          <div className="bg-white bg-opacity-20 rounded-lg p-4 shadow-lg w-80 text-center">
+            <h3 className="text-xl">Humidity in {city}</h3>
+            <p className="text-lg">{globalSummary?.averageHumidity}%</p>
+          </div>
+        )}
+
+        {/* Display alerts if any */}
+        {alerts.length > 0 && (
+          <div className="bg-red-600 bg-opacity-70 rounded-lg p-4 shadow-lg w-80 text-center">
+            <h3 className="text-xl">Alerts</h3>
+            {alerts.map((alert, index) => (
+              <p key={index} className="text-lg">{alert}</p>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Threshold Input */}
       <div className="mb-6">
-        <label htmlFor="threshold" className="text-lg">
-          Set Temperature Threshold (°C):
-        </label>
+        <label htmlFor="threshold" className="text-lg">Set Temperature Threshold (°C): </label>
         <input
           type="number"
           id="threshold"
           value={temperatureThreshold}
-          onChange={(e) => setTemperatureThreshold(Number(e.target.value))}
-          className="p-2 ml-2 rounded-lg shadow-md text-black text-center focus:outline-none focus:ring-2 focus:ring-blue-300"
+          onChange={(e) => setTemperatureThreshold(parseInt(e.target.value))}
+          className="p-2 rounded-lg shadow-md text-black w-32 text-center focus:outline-none focus:ring-2 focus:ring-blue-300 ml-2"
         />
       </div>
-
-      {globalSummary && (
-        <div className="bg-white bg-opacity-20 rounded-lg p-4 m-2 shadow-lg w-80 text-center mb-4">
-          <h3 className="text-xl">Weather Summary</h3>
-          <p className="text-lg">
-            Avg Temp: {globalSummary.averageTemp !== null ? globalSummary.averageTemp.toFixed(1) : 'N/A'}°C
-          </p>
-          <p className="text-lg">
-            Max Temp: {globalSummary.maxTemp !== null ? globalSummary.maxTemp.toFixed(1) : 'N/A'}°C
-          </p>
-          <p className="text-lg">
-            Min Temp: {globalSummary.minTemp !== null ? globalSummary.minTemp.toFixed(1) : 'N/A'}°C
-          </p>
-          <p className="text-lg">
-            Avg Humidity: {globalSummary.averageHumidity !== null ? globalSummary.averageHumidity.toFixed(1) : 'N/A'}%
-          </p>
-          <p className="text-lg">Dominant Condition: {globalSummary.dominantWeatherCondition}</p>
-        </div>
-      )}
-
-      {/* Humidity for the selected city */}
-      {humidity !== null && (
-        <div className="bg-white bg-opacity-20 rounded-lg p-4 m-2 shadow-lg w-80 text-center mb-4">
-          <h3 className="text-xl">Humidity in {city}</h3>
-          <p className="text-lg">{globalSummary.averageHumidity}%</p>
-        </div>
-      )}
-
-      {/* Alerts */}
-      {alerts.length > 0 && (
-        <div className="bg-red-500 bg-opacity-20 rounded-lg p-4 m-2 shadow-lg w-80 text-center mb-4">
-          <h3 className="text-xl">Alerts</h3>
-          {alerts.map((alert, index) => (
-            <p key={index} className="text-lg">{alert}</p>
-          ))}
-        </div>
-      )}
     </div>
   );
 };
