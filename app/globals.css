@@ -5,6 +5,9 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --primary: #1d4ed8;
+  --secondary: #fbbf24;
+  --alert: #dc2626;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -17,35 +20,21 @@
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', Arial, sans-serif;
+  transition: background 0.3s, color 0.3s;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-}
-/* styles/globals.css */
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 20px;
-  background-color: #f0f0f0;
+h1 {
+  color: var(--primary);
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
+.card {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-th, td {
-  padding: 10px;
-  text-align: left;
-  border: 1px solid #ddd;
-}
-
-th {
-  background-color: #0070f3;
+.alert {
+  background-color: var(--alert);
   color: white;
 }

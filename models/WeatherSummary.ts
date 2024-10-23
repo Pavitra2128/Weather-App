@@ -1,64 +1,42 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import connectToDatabase from '../lib/mongodb';
 
-// Define the weather summary interface
+// Define the interface for your weather summary document
 interface IWeatherSummary extends Document {
     date: string; // Format: YYYY-MM-DD
-    averageTemp: number; // Average temperature for the day
-    maxTemp: number; // Maximum temperature for the day
-    minTemp: number; // Minimum temperature for the day
-    dominantWeatherCondition: string; // Description of the main weather condition
+    averageTemp: number;
+    maxTemp: number;
+    minTemp: number;
+    dominantWeatherCondition: string;
 }
 
-// Define the schema for the weather summary
-const WeatherSummarySchema: Schema = new mongoose.Schema({
-    date: { type: String, required: true, unique: true }, // Ensure date is unique
+const WeatherSummarySchema: Schema<IWeatherSummary> = new mongoose.Schema({
+    date: { type: String, required: true, unique: true },
     averageTemp: { type: Number, required: true },
     maxTemp: { type: Number, required: true },
     minTemp: { type: Number, required: true },
     dominantWeatherCondition: { type: String, required: true },
 });
 
-// Create a method to calculate the summary based on an array of weather data
-WeatherSummarySchema.statics.createSummary = async function(weatherData: any[]) {
-    const totalTemp = weatherData.reduce((acc, curr) => acc + curr.main.temp, 0);
-    const maxTemp = Math.max(...weatherData.map(data => data.main.temp));
-    const minTemp = Math.min(...weatherData.map(data => data.main.temp));
-    
-    const averageTemp = totalTemp / weatherData.length;
-    
-    // Determine the dominant weather condition based on frequency
-    const conditionCounts: Record<string, number> = {};
-    weatherData.forEach(data => {
-        const condition = data.weather[0].main;
-        conditionCounts[condition] = (conditionCounts[condition] || 0) + 1;
-    });
-    
-    const dominantWeatherCondition = Object.keys(conditionCounts).reduce((a, b) => 
-        conditionCounts[a] > conditionCounts[b] ? a : b
-    );
+// Database connection logic
+async function connectToDatabase() {
+    console.log("Mongoose Connection State (before):", mongoose.connection.readyState);
+    if (mongoose.connection.readyState === 0) {
+        try {
+            await mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+            console.log("MongoDB connected successfully");
+        } catch (error) {
+            console.error("MongoDB connection error:", error);
+            throw new Error("Failed to connect to MongoDB");
+        }
+    }
+    console.log("Mongoose Connection State (after):", mongoose.connection.readyState);
+}
 
-    const summary = new this({
-        date: new Date().toISOString().split('T')[0], // Format as YYYY-MM-DD
-        averageTemp,
-        maxTemp,
-        minTemp,
-        dominantWeatherCondition,
-    });
-
-    await summary.save();
-    return summary;
-};
-
-// Method to fetch the latest summary
-WeatherSummarySchema.statics.getLatestSummary = async function() {
-    return await this.findOne().sort({ date: -1 }); // Get the latest summary by date
-};
-
-// Function to get the model after ensuring the database is connected
-const getWeatherSummaryModel = async () => {
-    await connectToDatabase(); // Ensure that MongoDB is connected
+// Get the WeatherSummary model
+async function getWeatherSummaryModel() {
+    await connectToDatabase();
     return mongoose.models.WeatherSummary || mongoose.model<IWeatherSummary>('WeatherSummary', WeatherSummarySchema);
-};
+}
 
+// Export the model directly
 export default getWeatherSummaryModel;

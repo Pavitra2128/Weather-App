@@ -1,11 +1,10 @@
-// /pages/index.tsx
 import Weather from '../components/Weather';
+import '../app/globals.css';
 
 export default function Home() {
-    return (
-        <div>
-            <h1>Weather Application</h1>
-            <Weather />
-        </div>
-    );
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
+      <Weather />
+    </div>
+  );
 }
